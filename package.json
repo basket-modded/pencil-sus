@@ -1,0 +1,24 @@
+{
+  "name": "pencil-sus",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A doodled-in-a-notebook 3D social deduction game. Drawings vs. the one who holds the eraser.",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.170.0",
+    "@types/ws": "^8.5.13",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "ws": "^8.18.0",
+    "wrangler": "^3.92.0"
+  }
+}
