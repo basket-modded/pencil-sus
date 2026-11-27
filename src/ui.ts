@@ -21,6 +21,7 @@ export interface UIActions {
   taskDone(id: string): void;
   mapToggle(open: boolean): void;
   emote(): void;
+  chat(text: string): void;
 }
 
 type Screen = 'menu' | 'lobby' | 'hud';
@@ -157,6 +158,30 @@ export class UI {
       sfx.click();
       this.actions?.leave();
     };
+    const chatInput = $('chat-input') as HTMLInputElement;
+    const say = () => {
+      const text = chatInput.value.trim();
+      if (!text) return;
+      this.actions?.chat(text);
+      chatInput.value = '';
+      chatInput.blur();
+      sfx.click();
+    };
+    $('chat-say').onclick = say;
+    chatInput.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') say();
+    });
+    const quick = $('chat-quick');
+    for (const phrase of ['where were you?', 'I saw them vent', 'sus', 'skip, no proof']) {
+      const b = document.createElement('button');
+      b.textContent = phrase;
+      b.onclick = () => {
+        this.actions?.chat(phrase);
+        sfx.click();
+      };
+      quick.appendChild(b);
+    }
     // typing in the room code + enter joins
     codeInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') ($('btn-join') as HTMLElement).click();
@@ -356,6 +381,34 @@ export class UI {
     } else promptEl.classList.add('hidden');
   }
 
+  private renderChat(snap: Snapshot, youId: string, visible: boolean) {
+    const wrap = $('chat');
+    wrap.classList.toggle('hidden', !visible);
+    if (!visible) return;
+    const log = $('chat-log');
+    const msgs = snap.feed.filter((f) => f.tone === 'chat');
+    const key = msgs.map((m) => m.id).join(',');
+    if (this.keys.get('chat') !== key) {
+      this.keys.set('chat', key);
+      log.innerHTML = msgs.length
+        ? msgs
+            .slice(-30)
+            .map((m) => {
+              const idx = m.text.indexOf(':');
+              const who = idx > 0 ? m.text.slice(0, idx) : '';
+              const body = idx > 0 ? m.text.slice(idx + 1) : m.text;
+              return `<div class="msg"><b>${escapeHtml(who)}</b>${escapeHtml(body.trim())}</div>`;
+            })
+            .join('')
+        : '<div class="empty">nobody is talking. be the first to point a pencil.</div>';
+      log.scrollTop = log.scrollHeight;
+    }
+    const me = snap.players.find((p) => p.id === youId);
+    const canTalk = !!me?.alive && (snap.phase === 'meeting' || snap.phase === 'vote');
+    ($('chat-input') as HTMLInputElement).disabled = !canTalk;
+    ($('chat-say') as HTMLButtonElement).disabled = !canTalk;
+  }
+
   private renderMeeting(snap: Snapshot, youId: string) {
     const show = snap.phase === 'meeting' || snap.phase === 'vote' || snap.phase === 'reveal' || snap.phase === 'eject';
     const el = $('meeting');
@@ -366,6 +419,7 @@ export class UI {
     }
     const me = snap.players.find((p) => p.id === youId);
     const voting = snap.phase === 'vote';
+    this.renderChat(snap, youId, snap.phase === 'meeting' || snap.phase === 'vote');
     const myVote = snap.votes?.[youId];
     const key = [
       snap.phase,
@@ -384,6 +438,7 @@ export class UI {
     const title = $('meeting-title');
     const sub = $('meeting-sub');
     if (snap.phase === 'reveal' || snap.phase === 'eject') {
+      this.renderChat(snap, youId, false);
       const r = snap.result;
       title.textContent = r?.ejectedName ? 'EJECTED' : 'NOBODY EJECTED';
       sub.textContent = '';

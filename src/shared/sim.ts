@@ -114,6 +114,7 @@ interface Player {
   sabotageCd: number;
   brain: BotBrain | null;
   joinedAt: number;
+  lastChat: number;
 }
 
 export class RoomSim {
@@ -176,6 +177,7 @@ export class RoomSim {
         ? { path: [], station: null, busy: 0, repathAt: 0, idle: 0, nextSabotage: 12, voteAt: 0, target: null }
         : null,
       joinedAt: Date.now(),
+      lastChat: 0,
     };
     if (bot) {
       const taken = new Set([...this.players.values()].map((x) => x.name));
@@ -318,6 +320,18 @@ export class RoomSim {
         if (this.sabotage.fixed.every(Boolean)) this.fixSabotage();
         break;
       }
+      case 'chat': {
+        if (!p.alive) break;
+        if (this.phase === 'play' || this.phase === 'over' || this.phase === 'eject') break;
+        const now = Date.now();
+        if (now - p.lastChat < 700) break;
+        const text = String(raw.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
+        if (!text) break;
+        p.lastChat = now;
+        this.pushFeed(`${p.name}: ${text}`, 'chat');
+        this.broadcastState();
+        break;
+      }
       case 'restart':
         if (playerId !== this.hostId) break;
         if (this.phase === 'over') this.backToLobby();
@@ -329,7 +343,14 @@ export class RoomSim {
 
   private pushFeed(text: string, tone = 'info') {
     this.feed.push({ id: this.feedId++, text, tone });
-    if (this.feed.length > 9) this.feed.shift();
+    const chat = this.feed.filter((f) => f.tone === 'chat');
+    if (this.feed.length > 14) {
+      // keep the most recent chatter even when events pile up
+      const keep = this.feed.slice(-10);
+      for (const c of chat.slice(-5)) if (!keep.includes(c)) keep.push(c);
+      keep.sort((a, b) => a.id - b.id);
+      this.feed = keep;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -929,7 +950,7 @@ export class RoomSim {
       result: this.phase === 'reveal' || this.phase === 'eject' || this.phase === 'over' ? this.result : null,
       winner: this.winner,
       winReason: this.winReason,
-      feed: this.feed.slice(),
+      feed: this.feed.slice(-12),
       impostorCount: this.players.size >= 7 ? 2 : 1,
       settings: { tasksPerPlayer: TASKS_PER_PLAYER, killCooldown: KILL_COOLDOWN },
     };

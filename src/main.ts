@@ -97,6 +97,7 @@ ui.actions = {
   taskDone: () => {},
   mapToggle: () => {},
   emote: () => {},
+  chat: (text) => game.command({ t: 'chat', text }),
 };
 
 // deep link: #ABCD

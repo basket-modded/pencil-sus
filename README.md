@@ -45,8 +45,9 @@ npm run dev          # http://localhost:5173
   and can trigger **LIGHTS OUT** (two breakers) or a **REACTOR MELTDOWN** (two panels,
   40 s, impostors win if it is not stabilised).
 - Found a body, or want to accuse someone? Slam the big red **EMERGENCY** button (or
-  press `E` next to a body) to start a meeting. Everyone votes; the most votes gets
-  crumpled up and thrown away.
+  press `E` next to a body) to start a meeting. Accuse, defend, panic in the meeting
+  chat (plus a few quick phrases for phones), then vote. The most votes gets crumpled
+  up and thrown away. Ghosts watch but cannot talk.
 - Dead? You become a paper ghost: fly through walls and watch the rest of the page.
 - Impostors win at parity or by melting the reactor. Drawings win by tasks or ejections.
 

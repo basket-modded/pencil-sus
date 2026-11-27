@@ -115,5 +115,6 @@ export type ClientMsg =
   | { t: 'sabotage'; kind: 'lights' | 'reactor' }
   | { t: 'fixLights'; breaker: number }
   | { t: 'reactorPanel'; panel: number }
+  | { t: 'chat'; text: string }
   | { t: 'restart' }
   | { t: 'ping'; id: number };
