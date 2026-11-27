@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#efe9da" />
+    <meta
+      name="description"
+      content="PENCIL SUS — a 3D doodle social deduction game. 2D drawings, a hand-sketched ship, and one of you holds the eraser."
+    />
+    <title>PENCIL SUS — a doodled social deduction game</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23f7f3e8'/%3E%3Cpath d='M14 46 L44 16 L52 24 L22 54 Z' fill='%23e8b93a' stroke='%232c2b33' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M14 46 L22 54 L12 56 Z' fill='%23f0e3c2' stroke='%232c2b33' stroke-width='3'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="vignette"></div>
+    <div id="paper-grain"></div>
+
+    <svg class="svg-defs" aria-hidden="true">
+      <filter id="pencil-wobble">
+        <feTurbulence type="fractalNoise" baseFrequency="0.028" numOctaves="3" seed="7" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.4" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+      <filter id="pencil-heavy">
+        <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="4" seed="3" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="4.5" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </svg>
+
+    <!-- ================= MENU ================= -->
+    <section id="menu" class="screen">
+      <div class="menu-wrap">
+        <header class="logo-wrap">
+          <h1 class="logo"><span>PENCIL</span> <em>SUS</em></h1>
+          <p class="tagline">
+            a hand-drawn ship · 2D doodle crewmates · one of you holds the <b>eraser</b>
+          </p>
+        </header>
+
+        <div class="panel menu-panel">
+          <label class="field">
+            <span>your name</span>
+            <input id="name-input" maxlength="14" placeholder="Doodle" autocomplete="off" spellcheck="false" />
+          </label>
+          <div class="field">
+            <span>crayon colour</span>
+            <div id="colors" class="colors"></div>
+          </div>
+          <label class="field">
+            <span>room code</span>
+            <input id="code-input" maxlength="4" placeholder="ABCD" autocapitalize="characters" spellcheck="false" />
+          </label>
+          <div class="row">
+            <button id="btn-join" class="btn">JOIN ROOM</button>
+            <button id="btn-create" class="btn primary">CREATE ROOM</button>
+          </div>
+          <button id="btn-solo" class="btn ghost">SOLO WITH DOODLE BOTS</button>
+          <p id="menu-status" class="status"></p>
+        </div>
+
+        <details class="rules panel">
+          <summary>how to play</summary>
+          <ul>
+            <li><b>Drawings</b> finish their tasks around the ship and try not to get erased.</li>
+            <li><b>The eraser</b> (impostor) kills doodles, vents between rooms and sabotages the ship.</li>
+            <li>Find a body or hit a task-ticked off page → <b>emergency meeting</b> → vote someone out.</li>
+            <li>Move with <kbd>WASD</kbd>, interact with <kbd>E</kbd>, open the map with <kbd>M</kbd>.</li>
+            <li>Task progress fills the bar at the top. Erasers win by numbers or a melted reactor.</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+
+    <!-- ================= LOBBY ================= -->
+    <section id="lobby" class="screen hidden">
+      <div class="panel lobby-panel">
+        <h2 class="logo small">LOBBY</h2>
+        <div class="code-row">
+          <span>room code</span>
+          <strong id="lobby-code">----</strong>
+          <button id="btn-copy" class="btn tiny">COPY</button>
+        </div>
+        <ul id="lobby-players" class="players"></ul>
+        <div class="row">
+          <button id="btn-bot" class="btn">+ DOODLE BOT</button>
+          <button id="btn-start" class="btn primary">START SCRIBBLING</button>
+        </div>
+        <p class="hint" id="lobby-hint"></p>
+        <button id="btn-leave" class="btn ghost">LEAVE ROOM</button>
+      </div>
+    </section>
+
+    <!-- ================= HUD ================= -->
+    <section id="hud" class="hidden">
+      <div id="taskbar" class="taskbar">
+        <div class="fill" id="taskbar-fill"></div>
+        <span id="taskbar-label">TASKS 0%</span>
+      </div>
+
+      <div id="rolechip" class="rolechip hidden"></div>
+      <div id="feed" class="feed"></div>
+      <div id="sabotage" class="sabotage hidden"></div>
+      <div id="tasks-list" class="tasks"></div>
+
+      <div id="prompt" class="prompt hidden"></div>
+
+      <div class="actions">
+        <button id="btn-sabo" class="btn round small hidden">!</button>
+        <div id="sabo-menu" class="sabo-menu hidden">
+          <button id="sabo-lights">LIGHTS OUT</button>
+          <button id="sabo-reactor">REACTOR MELTDOWN</button>
+        </div>
+        <button id="btn-use" class="btn round hidden"><span>USE</span></button>
+        <button id="btn-map" class="btn round small">MAP</button>
+      </div>
+
+      <div id="mapwrap" class="map hidden">
+        <canvas id="minimap" width="560" height="400"></canvas>
+        <p>sketch of the ship</p>
+      </div>
+
+      <div id="touch" class="touch">
+        <div id="stick" class="stick"><div class="nub"></div></div>
+      </div>
+    </section>
+
+    <!-- ================= INTRO FLASH ================= -->
+    <div id="intro" class="intro hidden">
+      <b id="intro-title"></b>
+      <span id="intro-sub"></span>
+    </div>
+
+    <!-- ================= TASK MODAL ================= -->
+    <div id="taskmodal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-head">
+          <span id="task-title">TASK</span>
+          <button id="task-close" class="close" aria-label="close">✕</button>
+        </div>
+        <div id="task-body"></div>
+      </div>
+    </div>
+
+    <!-- ================= MEETING ================= -->
+    <section id="meeting" class="screen hidden">
+      <div class="meeting-card">
+        <h2 id="meeting-title">EMERGENCY MEETING</h2>
+        <p id="meeting-sub"></p>
+        <div class="meeting-timer-track"><div id="meeting-timer"></div></div>
+        <div id="meeting-body"></div>
+      </div>
+    </section>
+
+    <!-- ================= GAME OVER ================= -->
+    <section id="over" class="screen hidden">
+      <div class="panel over-panel">
+        <h2 id="over-title" class="logo">DRAWINGS WIN</h2>
+        <p id="over-sub"></p>
+        <div id="over-list" class="over-list"></div>
+        <div class="row">
+          <button id="btn-over-again" class="btn primary">BACK TO LOBBY</button>
+          <button id="btn-over-leave" class="btn ghost">LEAVE</button>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

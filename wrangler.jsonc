@@ -1,0 +1,19 @@
+{
+  // Cloudflare Workers deploy config.
+  // Static game ships as Worker assets; real online rooms run in a Durable Object.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pencil-sus",
+  "main": "worker/index.ts",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "GAME_ROOM", "class_name": "GameRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] }],
+  "observability": { "enabled": true }
+}
